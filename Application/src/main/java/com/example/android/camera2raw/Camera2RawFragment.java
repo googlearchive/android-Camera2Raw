@@ -1024,89 +1024,93 @@ public class Camera2RawFragment extends Fragment
                 return;
             }
 
-            StreamConfigurationMap map = mCharacteristics.get(
-                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            StreamConfigurationMap map;
+            Size largestJpeg;
+            if (mCharacteristics != null) {
+                map = mCharacteristics.get(
+                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
-            // For still image captures, we always use the largest available size.
-            Size largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                    new CompareSizesByArea());
+                // For still image captures, we always use the largest available size.
+                largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
+                        new CompareSizesByArea());
 
-            // Find the rotation of the device relative to the native device orientation.
-            int deviceRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+                // Find the rotation of the device relative to the native device orientation.
+                int deviceRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 
-            // Find the rotation of the device relative to the camera sensor's orientation.
-            int totalRotation = sensorToDeviceRotation(mCharacteristics, deviceRotation);
+                // Find the rotation of the device relative to the camera sensor's orientation.
+                int totalRotation = sensorToDeviceRotation(mCharacteristics, deviceRotation);
 
-            // Swap the view dimensions for calculation as needed if they are rotated relative to
-            // the sensor.
-            boolean swappedDimensions = totalRotation == 90 || totalRotation == 270;
-            int rotatedViewWidth = viewWidth;
-            int rotatedViewHeight = viewHeight;
-            if (swappedDimensions) {
-                rotatedViewWidth = viewHeight;
-                rotatedViewHeight = viewWidth;
-            }
+                // Swap the view dimensions for calculation as needed if they are rotated relative to
+                // the sensor.
+                boolean swappedDimensions = totalRotation == 90 || totalRotation == 270;
+                int rotatedViewWidth = viewWidth;
+                int rotatedViewHeight = viewHeight;
+                if (swappedDimensions) {
+                    rotatedViewWidth = viewHeight;
+                    rotatedViewHeight = viewWidth;
+                }
 
-            // Find the best preview size for these view dimensions and configured JPEG size.
-            Size previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                    rotatedViewWidth, rotatedViewHeight, largestJpeg);
+                // Find the best preview size for these view dimensions and configured JPEG size.
+                Size previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                        rotatedViewWidth, rotatedViewHeight, largestJpeg);
 
-            if (swappedDimensions) {
-                mTextureView.setAspectRatio(
-                        previewSize.getHeight(), previewSize.getWidth());
-            } else {
-                mTextureView.setAspectRatio(
-                        previewSize.getWidth(), previewSize.getHeight());
-            }
+                if (swappedDimensions) {
+                    mTextureView.setAspectRatio(
+                            previewSize.getHeight(), previewSize.getWidth());
+                } else {
+                    mTextureView.setAspectRatio(
+                            previewSize.getWidth(), previewSize.getHeight());
+                }
 
-            // Find rotation of device in degrees (reverse device orientation for front-facing
-            // cameras).
-            int rotation = (mCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
-                    CameraCharacteristics.LENS_FACING_FRONT) ?
-                    (360 + ORIENTATIONS.get(deviceRotation)) % 360 :
-                    (360 - ORIENTATIONS.get(deviceRotation)) % 360;
+                // Find rotation of device in degrees (reverse device orientation for front-facing
+                // cameras).
+                int rotation = (mCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
+                        CameraCharacteristics.LENS_FACING_FRONT) ?
+                        (360 + ORIENTATIONS.get(deviceRotation)) % 360 :
+                        (360 - ORIENTATIONS.get(deviceRotation)) % 360;
 
-            Matrix matrix = new Matrix();
-            RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-            RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
-            float centerX = viewRect.centerX();
-            float centerY = viewRect.centerY();
+                Matrix matrix = new Matrix();
+                RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+                RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
+                float centerX = viewRect.centerX();
+                float centerY = viewRect.centerY();
 
-            // Initially, output stream images from the Camera2 API will be rotated to the native
-            // device orientation from the sensor's orientation, and the TextureView will default to
-            // scaling these buffers to fill it's view bounds.  If the aspect ratios and relative
-            // orientations are correct, this is fine.
-            //
-            // However, if the device orientation has been rotated relative to its native
-            // orientation so that the TextureView's dimensions are swapped relative to the
-            // native device orientation, we must do the following to ensure the output stream
-            // images are not incorrectly scaled by the TextureView:
-            //   - Undo the scale-to-fill from the output buffer's dimensions (i.e. its dimensions
-            //     in the native device orientation) to the TextureView's dimension.
-            //   - Apply a scale-to-fill from the output buffer's rotated dimensions
-            //     (i.e. its dimensions in the current device orientation) to the TextureView's
-            //     dimensions.
-            //   - Apply the rotation from the native device orientation to the current device
-            //     rotation.
-            if (Surface.ROTATION_90 == deviceRotation || Surface.ROTATION_270 == deviceRotation) {
-                bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                float scale = Math.max(
-                        (float) viewHeight / previewSize.getHeight(),
-                        (float) viewWidth / previewSize.getWidth());
-                matrix.postScale(scale, scale, centerX, centerY);
+                // Initially, output stream images from the Camera2 API will be rotated to the native
+                // device orientation from the sensor's orientation, and the TextureView will default to
+                // scaling these buffers to fill it's view bounds.  If the aspect ratios and relative
+                // orientations are correct, this is fine.
+                //
+                // However, if the device orientation has been rotated relative to its native
+                // orientation so that the TextureView's dimensions are swapped relative to the
+                // native device orientation, we must do the following to ensure the output stream
+                // images are not incorrectly scaled by the TextureView:
+                //   - Undo the scale-to-fill from the output buffer's dimensions (i.e. its dimensions
+                //     in the native device orientation) to the TextureView's dimension.
+                //   - Apply a scale-to-fill from the output buffer's rotated dimensions
+                //     (i.e. its dimensions in the current device orientation) to the TextureView's
+                //     dimensions.
+                //   - Apply the rotation from the native device orientation to the current device
+                //     rotation.
+                if (Surface.ROTATION_90 == deviceRotation || Surface.ROTATION_270 == deviceRotation) {
+                    bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                    matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+                    float scale = Math.max(
+                            (float) viewHeight / previewSize.getHeight(),
+                            (float) viewWidth / previewSize.getWidth());
+                    matrix.postScale(scale, scale, centerX, centerY);
 
-            }
-            matrix.postRotate(rotation, centerX, centerY);
+                }
+                matrix.postRotate(rotation, centerX, centerY);
 
-            mTextureView.setTransform(matrix);
+                mTextureView.setTransform(matrix);
 
-            // Start or restart the active capture session if the preview was initialized or
-            // if its aspect ratio changed significantly.
-            if (mPreviewSize == null || !checkAspectsEqual(previewSize, mPreviewSize)) {
-                mPreviewSize = previewSize;
-                if (mState != STATE_CLOSED) {
-                    createCameraPreviewSessionLocked();
+                // Start or restart the active capture session if the preview was initialized or
+                // if its aspect ratio changed significantly.
+                if (mPreviewSize == null || !checkAspectsEqual(previewSize, mPreviewSize)) {
+                    mPreviewSize = previewSize;
+                    if (mState != STATE_CLOSED) {
+                        createCameraPreviewSessionLocked();
+                    }
                 }
             }
         }
