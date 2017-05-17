@@ -547,10 +547,6 @@ public class Camera2RawFragment extends Fragment
                 jpegBuilder = mJpegResultQueue.get(requestId);
                 rawBuilder = mRawResultQueue.get(requestId);
 
-                // If we have all the results necessary, save the image to a file in the background.
-                handleCompletionLocked(requestId, jpegBuilder, mJpegResultQueue);
-                handleCompletionLocked(requestId, rawBuilder, mRawResultQueue);
-
                 if (jpegBuilder != null) {
                     jpegBuilder.setResult(result);
                     sb.append("Saving JPEG as: ");
@@ -562,6 +558,11 @@ public class Camera2RawFragment extends Fragment
                     sb.append("Saving RAW as: ");
                     sb.append(rawBuilder.getSaveLocation());
                 }
+
+                // If we have all the results necessary, save the image to a file in the background.
+                handleCompletionLocked(requestId, jpegBuilder, mJpegResultQueue);
+                handleCompletionLocked(requestId, rawBuilder, mRawResultQueue);
+
                 finishedCaptureLocked();
             }
 
@@ -763,6 +764,7 @@ public class Camera2RawFragment extends Fragment
     /**
      * Opens the camera specified by {@link #mCameraId}.
      */
+    @SuppressWarnings("MissingPermission")
     private void openCamera() {
         if (!setUpCameraOutputs()) {
             return;

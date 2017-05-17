@@ -32,7 +32,7 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
         android:layout_below="@id/texture"
-        android:layout_toRightOf="@id/texture"
+        android:layout_toEndOf="@id/texture"
         android:background="#4285f4"
         android:orientation="horizontal">
 
