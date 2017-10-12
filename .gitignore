@@ -1,0 +1,7 @@
+.gradle/
+.idea/
+Application/Application.iml
+Application/build/
+android-Camera2Raw.iml
+build/
+local.properties

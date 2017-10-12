@@ -1039,7 +1039,7 @@ public class Camera2RawFragment extends Fragment
     private void configureTransform(int viewWidth, int viewHeight) {
         Activity activity = getActivity();
         synchronized (mCameraStateLock) {
-            if (null == mTextureView || null == activity) {
+            if (null == mTextureView || null == activity || mCharacteristics == null) {
                 return;
             }
 
