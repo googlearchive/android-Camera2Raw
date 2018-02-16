@@ -1743,7 +1743,7 @@ public class Camera2RawFragment extends Fragment
 
         // Calculate desired JPEG orientation relative to camera orientation to make
         // the image upright relative to the device orientation
-        return (sensorOrientation + deviceOrientation + 360) % 360;
+        return (sensorOrientation - deviceOrientation + 360) % 360;
     }
 
     /**
