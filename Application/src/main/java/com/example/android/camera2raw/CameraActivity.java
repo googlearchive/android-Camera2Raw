@@ -34,5 +34,4 @@ public class CameraActivity extends Activity {
                     .commit();
         }
     }
-
 }
